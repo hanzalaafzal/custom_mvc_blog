@@ -28,6 +28,7 @@ Session::start();
             </form>
         <?php else: ?>
             <a href="/login">Login</a>
+            <a href="/register" style="margin-left: 8px;">Register</a>
         <?php endif; ?>
     </nav>
 </header>
