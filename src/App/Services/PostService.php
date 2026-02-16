@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\Post;
+use App\Repositories\Contracts\PostRepositoryInterface;
 
 final class PostService
 {
-    private Post $post;
+    private PostRepositoryInterface $postRepository;
 
     private const PER_PAGE = 5;
 
-    public function __construct()
+    public function __construct(PostRepositoryInterface $postRepository)
     {
-        $this->post = new Post();
+        $this->postRepository = $postRepository;
     }
 
     /**
@@ -24,7 +24,7 @@ final class PostService
     public function getPaginatedPosts(array $queryParams): array
     {
         $page = isset($queryParams['page']) ? max(1, (int) $queryParams['page']) : 1;
-        $totalPosts = $this->post->countAll();
+        $totalPosts = $this->postRepository->countAll();
         $totalPages = (int) max(1, (int) ceil($totalPosts / self::PER_PAGE));
 
         if ($page > $totalPages) {
@@ -34,7 +34,7 @@ final class PostService
         $offset = ($page - 1) * self::PER_PAGE;
 
         return [
-            'posts' => $this->post->paginate(self::PER_PAGE, $offset),
+            'posts' => $this->postRepository->paginate(self::PER_PAGE, $offset),
             'currentPage' => $page,
             'totalPages' => $totalPages,
         ];
@@ -45,7 +45,7 @@ final class PostService
      */
     public function getPostById(int $id): ?array
     {
-        return $this->post->getById($id);
+        return $this->postRepository->getById($id);
     }
 
     /**
@@ -76,25 +76,25 @@ final class PostService
 
     public function createPost(int $userId, string $title, string $body): bool
     {
-        return $this->post->create($userId, $title, $body);
+        return $this->postRepository->create($userId, $title, $body);
     }
 
     public function updatePostForUser(int $postId, int $authUserId, string $authRole, string $title, string $body): bool
     {
         if ($authRole === 'admin') {
-            return $this->post->update($postId, $title, $body);
+            return $this->postRepository->update($postId, $title, $body);
         }
 
-        return $this->post->updateByOwner($postId, $authUserId, $title, $body);
+        return $this->postRepository->updateByOwner($postId, $authUserId, $title, $body);
     }
 
     public function deletePostForUser(int $postId, int $authUserId, string $authRole): bool
     {
         if ($authRole === 'admin') {
-            return $this->post->delete($postId);
+            return $this->postRepository->delete($postId);
         }
 
-        return $this->post->deleteByOwner($postId, $authUserId);
+        return $this->postRepository->deleteByOwner($postId, $authUserId);
     }
 
     /**

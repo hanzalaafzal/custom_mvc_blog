@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-
+use App\Services\AuthService;
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use App\Services\AuthService;
 use Traits\Csrf;
-use Traits\Session;
-use Traits\Render;
 use Traits\Permission;
+use Traits\Render;
+use Traits\Session;
 
 class AuthenticationController
 {
@@ -21,10 +20,13 @@ class AuthenticationController
     use Render;
     use Permission;
 
-    /**
-     * Controller to render login page
-     * @throws \Exception
-     */
+    private AuthService $authService;
+
+    public function __construct(AuthService $authService)
+    {
+        $this->authService = $authService;
+    }
+
     public function viewLogin(ServerRequestInterface $request): ResponseInterface
     {
         Session::start();
@@ -41,14 +43,8 @@ class AuthenticationController
         return new Response(200, ['Content-Type' => 'text/html; charset=UTF-8'], $body);
     }
 
-    /**
-     * @throws \Exception
-     */
     public function authenticate(ServerRequestInterface $request): ResponseInterface
     {
-
-        //Improvement: Add validation for email with regex
-
         if (!$this->validateCsrf($request)) {
             Session::set('flash_error', 'No CSRF Token found in request');
             return new Response(302, ['Location' => '/login']);
@@ -60,7 +56,7 @@ class AuthenticationController
             return new Response(302, ['Location' => '/login']);
         }
 
-        if ((new AuthService())->attempt($formData['email'], $formData['password'])) {
+        if ($this->authService->attempt((string) $formData['email'], (string) $formData['password'])) {
             return new Response(302, ['Location' => '/posts']);
         }
 
@@ -70,10 +66,6 @@ class AuthenticationController
         return new Response(302, ['Location' => '/login']);
     }
 
-    /**
-     * Controller to render registration page
-     * @throws \Exception
-     */
     public function viewRegistration(ServerRequestInterface $request): ResponseInterface
     {
         Session::start();
@@ -90,9 +82,6 @@ class AuthenticationController
         return new Response(200, ['Content-Type' => 'text/html; charset=UTF-8'], $body);
     }
 
-    /**
-     * @throws \Exception
-     */
     public function register(ServerRequestInterface $request): ResponseInterface
     {
         if (!$this->validateCsrf($request)) {
@@ -102,8 +91,7 @@ class AuthenticationController
 
         $formData = $request->getParsedBody();
 
-
-        if (empty(trim($formData['name'])) || empty(trim($formData['email'])) || empty(trim($formData['password']))) {
+        if (empty(trim((string) $formData['name'])) || empty(trim((string) $formData['email'])) || empty(trim((string) $formData['password']))) {
             Session::set('flash_error', 'Name, email and password are required.');
             return new Response(302, ['Location' => '/register']);
         }
@@ -113,35 +101,32 @@ class AuthenticationController
             return new Response(302, ['Location' => '/register']);
         }
 
-        if (strlen($formData['password']) < 8) {
+        if (strlen((string) $formData['password']) < 8) {
             Session::set('flash_error', 'Password must be at least 8 characters long.');
             return new Response(302, ['Location' => '/register']);
         }
 
-        if ($formData['password'] !== $formData['password_confirmation']) {
+        if (($formData['password'] ?? '') !== ($formData['password_confirmation'] ?? null)) {
             Session::set('flash_error', 'Password confirmation does not match.');
             return new Response(302, ['Location' => '/register']);
         }
 
-        if (!(new AuthService())->register($formData['name'], $formData['email'], $formData['password'])) {
+        if (!$this->authService->register((string) $formData['name'], (string) $formData['email'], (string) $formData['password'])) {
             Session::set('flash_error', 'Email is already in use.');
             return new Response(302, ['Location' => '/register']);
         }
 
         return new Response(302, ['Location' => '/login']);
-
     }
 
     public function logout(ServerRequestInterface $request): ResponseInterface
     {
-
         Session::start();
 
-        if(self::isAuthenticated()) {
+        if (self::isAuthenticated()) {
             Session::forget('auth_user_id');
         }
 
         return new Response(302, ['Location' => '/login']);
-
     }
 }

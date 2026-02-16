@@ -1,56 +1,33 @@
 <?php
 
-namespace App\Models;
+declare(strict_types=1);
 
-use Database\Connection;
+namespace App\Repositories;
+
+use App\Repositories\Contracts\UserRepositoryInterface;
 use PDO;
 
-final class User
+final class UserRepository implements UserRepositoryInterface
 {
-    /**
-     * Table name
-     * @var string
-     */
     private string $table = 'users';
 
-    /**
-     * Primary key of table
-     * @var string
-     */
-    private string $key = 'id';
-
-    /**
-     * PDO Instance
-     * @var PDO
-     */
     private PDO $pdo;
 
-    /**
-     * Constructor to initialize PDO instance
-     */
-    public function __construct()
+    public function __construct(PDO $pdo)
     {
-        $this->pdo = (new Connection())->pdo();
+        $this->pdo = $pdo;
     }
 
-    /**
-     * Get User Row using email
-     * @param string|null $email
-     * @return array|null
-     * @throws \Exception
-     */
     public function getByEmail(?string $email): ?array
     {
         if ($email === null || trim($email) === '') {
-            throw new \Exception('Trying to find email on null');
+            throw new \InvalidArgumentException('Email is required.');
         }
 
         $queryToPrepare = "SELECT * FROM {$this->table} WHERE email = :email LIMIT 1";
 
         $statement = $this->pdo->prepare($queryToPrepare);
-        
         $statement->bindValue(':email', $email);
-
         $statement->execute();
 
         $userData = $statement->fetch();
@@ -58,13 +35,7 @@ final class User
         return is_array($userData) ? $userData : null;
     }
 
-    /**
-     * @param string $name
-     * @param string $email
-     * @param string $hashedPassword
-     * @return bool|null
-     */
-    public function createUser(string $name, string $email, string $hashedPassword): ?bool
+    public function createUser(string $name, string $email, string $hashedPassword): bool
     {
         $queryToPrepare = "INSERT INTO {$this->table} (name, email, password_hash, role) VALUES (:name, :email, :password_hash, :role)";
 

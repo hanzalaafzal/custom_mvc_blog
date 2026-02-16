@@ -4,31 +4,27 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\User;
+use App\Repositories\Contracts\UserRepositoryInterface;
 use Traits\Session;
 
-class AuthService
+final class AuthService
 {
+    private UserRepositoryInterface $userRepository;
 
-    private User $user;
-
-    public function __construct()
+    public function __construct(UserRepositoryInterface $userRepository)
     {
-        $this->user = new User();
+        $this->userRepository = $userRepository;
     }
 
-    /**
-     * @throws \Exception
-     */
     public function attempt(string $email, string $password): bool
     {
-        $userData = $this->user->getByEmail($email);
+        $userData = $this->userRepository->getByEmail($email);
 
-        if (!is_array($userData) && empty($userData)) {
-           return false;
+        if (!is_array($userData)) {
+            return false;
         }
 
-        if (!password_verify($password, $userData['password_hash'])) {
+        if (!password_verify($password, (string) $userData['password_hash'])) {
             return false;
         }
 
@@ -41,12 +37,9 @@ class AuthService
         return true;
     }
 
-    /**
-     * @throws \Exception
-     */
     public function register(string $name, string $email, string $password): bool
     {
-        if ($this->user->getByEmail($email) !== null) {
+        if ($this->userRepository->getByEmail($email) !== null) {
             return false;
         }
 
@@ -56,9 +49,6 @@ class AuthService
             throw new \RuntimeException('Failed to hash password.');
         }
 
-        return $this->user->createUser($name, $email, $passwordHash);
-
+        return $this->userRepository->createUser($name, $email, $passwordHash);
     }
-
-
 }

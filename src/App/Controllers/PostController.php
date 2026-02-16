@@ -22,15 +22,12 @@ final class PostController
 
     private PostService $postService;
 
-    public function __construct()
+    public function __construct(PostService $postService)
     {
         Session::start();
-        $this->postService = new PostService();
+        $this->postService = $postService;
     }
 
-    /**
-     * @throws \Exception
-     */
     public function index(ServerRequestInterface $request): ResponseInterface
     {
         if (!$this->isAuthenticated()) {
@@ -53,9 +50,6 @@ final class PostController
         return new Response(200, ['Content-Type' => 'text/html; charset=UTF-8'], $body);
     }
 
-    /**
-     * @throws \Exception
-     */
     public function showCreateForm(ServerRequestInterface $request): ResponseInterface
     {
         if (!$this->isAuthenticated()) {
@@ -74,9 +68,6 @@ final class PostController
         return new Response(200, ['Content-Type' => 'text/html; charset=UTF-8'], $body);
     }
 
-    /**
-     * @throws \Exception
-     */
     public function store(ServerRequestInterface $request): ResponseInterface
     {
         if (!$this->isAuthenticated() || !$this->isAllowed('add_post')) {
@@ -106,9 +97,6 @@ final class PostController
         return new Response(302, ['Location' => '/posts']);
     }
 
-    /**
-     * @throws \Exception
-     */
     public function view(ServerRequestInterface $request): ResponseInterface
     {
         if (!$this->isAuthenticated()) {
@@ -125,9 +113,6 @@ final class PostController
         return new Response(200, ['Content-Type' => 'text/html; charset=UTF-8'], $body);
     }
 
-    /**
-     * @throws \Exception
-     */
     public function showEditForm(ServerRequestInterface $request): ResponseInterface
     {
         if (!$this->isAuthenticated()) {
@@ -157,9 +142,6 @@ final class PostController
         return new Response(200, ['Content-Type' => 'text/html; charset=UTF-8'], $body);
     }
 
-    /**
-     * @throws \Exception
-     */
     public function update(ServerRequestInterface $request): ResponseInterface
     {
         if (!$this->isAuthenticated() || !$this->isAllowed('update_post')) {
@@ -207,9 +189,6 @@ final class PostController
         return new Response(302, ['Location' => '/posts']);
     }
 
-    /**
-     * @throws \Exception
-     */
     public function delete(ServerRequestInterface $request): ResponseInterface
     {
         if (!$this->isAuthenticated() || !$this->isAllowed('delete_post')) {

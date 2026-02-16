@@ -2,25 +2,22 @@
 
 declare(strict_types=1);
 
-namespace App\Models;
+namespace App\Repositories;
 
-use Database\Connection;
+use App\Repositories\Contracts\PostRepositoryInterface;
 use PDO;
 
-final class Post
+final class PostRepository implements PostRepositoryInterface
 {
     private string $table = 'posts';
 
     private PDO $pdo;
 
-    public function __construct()
+    public function __construct(PDO $pdo)
     {
-        $this->pdo = (new Connection())->pdo();
+        $this->pdo = $pdo;
     }
 
-    /**
-     * @return array<int, array<string, mixed>>
-     */
     public function paginate(int $limit, int $offset): array
     {
         $sql = "SELECT p.id, p.user_id, p.title, p.body, p.created_at, p.updated_at, u.name AS author_name
@@ -42,15 +39,11 @@ final class Post
     public function countAll(): int
     {
         $statement = $this->pdo->query("SELECT COUNT(*) FROM {$this->table}");
-
         $count = $statement->fetchColumn();
 
         return is_numeric($count) ? (int) $count : 0;
     }
 
-    /**
-     * @return array<string, mixed>|null
-     */
     public function getById(int $id): ?array
     {
         $sql = "SELECT p.id, p.user_id, p.title, p.body, p.created_at, p.updated_at, u.name AS author_name

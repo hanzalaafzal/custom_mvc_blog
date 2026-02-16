@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Core;
 
+use Database\Connection;
 use FastRoute\Dispatcher;
 use Nyholm\Psr7\Response;
+use PDO;
+use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -16,12 +19,15 @@ final class App
      */
     private array $routes;
 
+    private ContainerInterface $container;
+
     /**
      * @param array<int, array{method:string, path:string, handler:array{0:class-string,1:string}}> $routes
      */
     public function __construct(array $routes)
     {
         $this->routes = $routes;
+        $this->container = $this->bootstrapContainer();
     }
 
     public function handle(ServerRequestInterface $request): ResponseInterface
@@ -51,6 +57,15 @@ final class App
         return $this->invoke($handler, $request);
     }
 
+    private function bootstrapContainer(): ContainerInterface
+    {
+        /** @var array<string, mixed> $bindings */
+        $bindings = require ROOT_DIR . '/src/bindings.php';
+        $bindings[PDO::class] = (new Connection())->pdo();
+
+        return Container::build($bindings);
+    }
+
     /**
      * @param array{0:class-string,1:string} $handler
      */
@@ -62,7 +77,7 @@ final class App
             return new Response(500, [], 'Controller not found.');
         }
 
-        $controller = new $controllerClass();
+        $controller = $this->container->get($controllerClass);
 
         if (!method_exists($controller, $method)) {
             return new Response(500, [], 'Controller method not found.');
