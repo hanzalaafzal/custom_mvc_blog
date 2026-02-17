@@ -39,7 +39,6 @@ $request = $requestCreator->fromGlobals();
 $app = new App(require_once dirname(__DIR__) . '/src/routes.php');
 $response = $app->handle($request);
 
-
 http_response_code($response->getStatusCode());
 
 foreach ($response->getHeaders() as $headerName => $headerValues) {

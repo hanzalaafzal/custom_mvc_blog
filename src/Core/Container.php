@@ -10,6 +10,7 @@ final class Container
 {
     /**
      * @param array<string, mixed> $definitions
+     * @throws \Exception
      */
     public static function build(array $definitions = []): \DI\Container
     {
